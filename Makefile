@@ -1,18 +1,23 @@
-LISP=          ecl
+LISP=ecl
 
-all: dirs html
+all: html gopher
 
 html: $(HTML) css
-	$(LISP) --load generator.lisp
-
-dirs:
 	mkdir -p "output/html/static"
-	mkdir -p "output/gopher"
-
-
-clean:
-	rm -fr output/html/* output/gopher/* "temp"
+	$(LISP) --load generator.lisp
 
 css:
 	mkdir -p "output/html/static"
 	cp -fr static/* "output/html/static/"
+
+gopher:
+	mkdir -p "output/gopher"
+
+clean: cleanhtml cleangopher
+	rm -fr "temp"
+
+cleanhtml:
+	rm -fr output/html/*
+
+cleangopher:
+	output/gopher/* 
