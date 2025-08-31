@@ -132,7 +132,6 @@
 (defun use-converter-to-html(filename &optional (converter-name nil))
   (let* ((converter-object (getf *converters*
                                  (or converter-name
-			             converter-name
 			             (getf *config* :default-converter))))
          (output           (converter-command converter-object))
          (src-file (format nil "~a~a" filename (converter-extension converter-object)))
