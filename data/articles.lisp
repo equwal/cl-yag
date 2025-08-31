@@ -1,8 +1,5 @@
 ;; MIND: The tilde character "~" must be escaped like this '~~' to use it as a literal.
 
-
-;; Define Your Webpage
-
 (defvar *config*
   (list
    :webmaster       "Your autor name here"
@@ -23,6 +20,7 @@
    ;; :gopher-index "gophermap"                         ;; menu file (gophernicus and others)
    ))
 
+;; Define Your Webpage
 
 (converter :name :markdown  :extension ".md"  :command "peg-markdown -t html -o %OUT data/%IN")
 (converter :name :markdown2 :extension ".md"  :command "multimarkdown -t html -o %OUT data/%IN")

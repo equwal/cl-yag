@@ -7,14 +7,20 @@
 (defparameter *months* '("January" "February" "March" "April"
                          "May" "June" "July" "August" "September"
                          "October" "November" "December"))
+(defparameter *generators* '())
 
 ;; structure to store links
 (defstruct article title tag date id tiny author rawdate converter)
 (defstruct converter name command extension)
+(defstruct generator key create-site-fn)
+
+;; put these somewhere else and automagically get them pushed to *generators*
 
 ;;;; FUNCTIONS
 
 (require 'asdf)
+
+(load "config.lisp")
 
 ;; return the day of the week
 (defun get-day-of-week(day month year)
@@ -64,7 +70,6 @@
 ;; load data from metadata and load config
 (load "data/articles.lisp")
 (setf *articles* (reverse *articles*))
-
 
 ;; common-lisp don't have a replace string function natively
 (defun replace-all (string part replacement &key (test #'char=))
@@ -118,6 +123,14 @@
   `(progn
      (setf output (replace-all output ,before ,@after))))
 
+;; simplify the declaration of a new page type
+(defmacro prepare(template &body code)
+  `(progn
+     (let ((output (load-file ,template)))
+       ,@code
+       output)))
+
+
 ;; get the converter object of "article"
 (defmacro with-converter(&body code)
   `(progn
@@ -160,116 +173,8 @@
     (template "%Year"        (write-to-string (getf date :year )))
     output))
 
-;; simplify the declaration of a new page type
-(defmacro prepare(template &body code)
-  `(progn
-     (let ((output (load-file ,template)))
-       ,@code
-       output)))
-
-;; simplify the file saving by using the layout
-(defmacro generate(name &body data)
-  `(progn
-     (save-file ,name (generate-layout ,@data))))
-
-;; generate a gopher index file
-(defun generate-gopher-index(articles)
-  (let ((output (load-file "templates/gopher_head.tpl")))
-    (dolist (article articles)
-      (setf output
-	    (string
-	     (concatenate 'string output
-                          (format nil (getf *config* :gopher-format)
-                                  0 ;;;; gopher type, 0 for text files
-				  ;; here we create a 80 width char string with title on the left
-				  ;; and date on the right
-				  ;; we truncate the article title if it's too large
-				  (let ((title (format nil "~80a"
-						       (if (< 80 (length (article-title article)))
-							   (subseq (article-title article) 0 80)
-							   (article-title article)))))
-				    (replace title (article-rawdate article) :start1 (- (length title) (length (article-rawdate article)))))
-				  (concatenate 'string
-                                               (getf *config* :gopher-path) "/article-" (article-id article) ".txt")
-				  (getf *config* :gopher-server)
-				  (getf *config* :gopher-port)
-				  )))))
-    output))
-
-;; generate the list of tags
-(defun articles-by-tag()
-  (let ((tag-list))
-    (loop for article in *articles* do
-	  (when (article-tag article) ;; we don't want an error if no tag
-	    (loop for tag in (split-str (article-tag article)) do ;; for each word in tag keyword
-		  (setf (getf tag-list (intern tag "KEYWORD")) ;; we create the keyword is inexistent and add ID to :value
-			(list
-			 :name tag
-			 :value (push (article-id article) (getf (getf tag-list (intern tag "KEYWORD")) :value)))))))
-    (loop for i from 1 to (length tag-list) by 2 collect ;; removing the keywords
-	  (nth i tag-list))))
-
-;; generates the html of the list of tags for an article
-(defun get-tag-list-article(&optional article)
-  (apply #'concatenate 'string
-         (mapcar #'(lambda (item)
-                     (prepare "templates/one-tag.tpl" (template "%%Name%%" item)))
-                 (split-str (article-tag article)))))
-
-;; generates the html of the whole list of tags
-(defun get-tag-list()
-  (apply #'concatenate 'string
-         (mapcar #'(lambda (item)
-                     (prepare "templates/one-tag.tpl"
-                              (template "%%Name%%" (getf item :name))))
-                 (articles-by-tag))))
-
-
-;; generates the html of only one article
-;; this is called in a loop to produce the homepage
-(defun create-article(article &optional &key (tiny t) (no-text nil))
-  (prepare "templates/article.tpl"
-	   (template "%%Author%%" (let ((author (article-author article)))
-                                    (or author (getf *config* :webmaster))))
-	   (template "%%Date%%"   (date-format (getf *config* :date-format)
-					       (article-date article)))
-           (template "%%Raw-Date%%" (article-rawdate article))
-           (template "%%Title%%"  (article-title article))
-           (template "%%Id%%"     (article-id article))
-	   (template "%%Tags%%"   (get-tag-list-article article))
-	   (template "%%Date-Url%%"  (date-format "%Year-%MonthNumber-%DayNumber"
-						  (article-date article)))
-	   (template "%%Text%%"   (if no-text
-				      ""
-                                      (if (and tiny (article-tiny article))
-                                          (format nil "<p>~a</p>" (article-tiny article))
-                                          (load-file (format nil "temp/data/~d.html" (article-id article))))))))
-
-;; return a html string
-;; produce the code of a whole page with title+layout with the parameter as the content
-(defun generate-layout(body &optional &key (title nil))
-  (prepare "templates/layout.tpl"
-	   (template "%%Title%%" (if title title (getf *config* :title)))
-	   (template "%%Tags%%" (get-tag-list))
-	   (template "%%Body%%" body)
-	   output))
-
-
-;; html generation of index homepage
-(defun generate-semi-mainpage(&key (tiny t) (no-text nil))
-  (apply #'concatenate 'string
-         (loop for article in *articles* collect
-              (create-article article :tiny tiny :no-text no-text))))
-
-;; html generation of a tag homepage
-(defun generate-tag-mainpage(articles-in-tag)
-  (apply #'concatenate 'string
-         (loop for article in *articles*
-            when (member (article-id article) articles-in-tag :test #'equal)
-            collect (create-article article :tiny t))))
-
 ;; xml generation of the items for the rss
-(defun generate-rss-item(&key (gopher nil))
+(defun generate-rss-item (fn)
   (apply #'concatenate 'string
          (loop for article in *articles*
             for i from 1 to (min (length *articles*) (getf *config* :rss-item-number))
@@ -282,135 +187,28 @@
 								 (article-date article))
 						    (subseq (getf (article-date article) :dayname) 0 3)
 						    (subseq (getf (article-date article) :monthname) 0 3)))
-                       (template "%%Url%%"
-                                 (if gopher
-                                     (format nil "gopher://~a:~d/0~a/article-~a.txt"
-					     (getf *config* :gopher-server)
-					     (getf *config* :gopher-port)
-                                             (getf *config* :gopher-path)
-					     (article-id article))
-                                     (format nil "~d~d-~d.html"
-                                             (getf *config* :url)
-                                             (date-format "%Year-%MonthNumber-%DayNumber"
-                                                          (article-date article))
-                                             (article-id article))))))))
+                       (template "%%Url%%" (funcall fn article))))))
 
 
 ;; Generate the rss xml data
-(defun generate-rss(&key (gopher nil))
+(defun generate-rss(fn)
   (prepare "templates/rss.tpl"
 	   (template "%%Description%%" (getf *config* :description))
 	   (template "%%Title%%" (getf *config* :title))
 	   (template "%%Url%%" (getf *config* :url))
-	   (template "%%Items%%" (generate-rss-item :gopher gopher))))
+	   (template "%%Items%%" (generate-rss-item fn))))
 
-;; We do all the website
-(defun create-html-site()
-
-  ;; produce each article file
-  (loop for article in *articles*
-     do
-     ;; use the article's converter to get html code of it
-       (use-converter-to-html (article-id article) (article-converter article))
-
-	(generate  (format nil "output/html/~d-~d.html"
-			   (date-format "%Year-%MonthNumber-%DayNumber"
-					(article-date article))
-			   (article-id article))
-		   (create-article article :tiny nil)
-		   :title (concatenate 'string (getf *config* :title) " : " (article-title article))))
-
-  ;; produce index.html
-  (generate "output/html/index.html" (generate-semi-mainpage))
-
-  ;; produce index-titles.html where there are only articles titles
-  (generate "output/html/index-titles.html" (generate-semi-mainpage :no-text t))
-
-  ;; produce index file for each tag
-  (loop for tag in (articles-by-tag) do
-       (generate (format nil "output/html/tag-~d.html" (getf tag :NAME))
-		  (generate-tag-mainpage (getf tag :VALUE))))
-
-  ;; generate rss gopher in html folder if gopher is t
-  (when (getf *config* :gopher)
-    (save-file "output/html/rss-gopher.xml" (generate-rss :gopher t)))
-
-  ;;(generate-file-rss)
-  (save-file "output/html/rss.xml" (generate-rss)))
-
-;; we do all the gopher hole
-(defun create-gopher-hole()
-
-  ;;(generate-file-rss)
-  (save-file "output/gopher/rss.xml" (generate-rss :gopher t))
-
-  ;; produce the gophermap file
-  (save-file (concatenate 'string "output/gopher/" (getf *config* :gopher-index))
-             (generate-gopher-index *articles*))
-
-  ;; produce a tag list menu
-  (let* ((directory-path "output/gopher/_tags_/")
-         (index-path (concatenate 'string directory-path (getf *config* :gopher-index))))
-    (ensure-directories-exist directory-path)
-    (save-file index-path
-               (let ((output (load-file "templates/gopher_head.tpl")))
-                 (loop for tag in
-                      ;; sort tags per articles in it
-                      (sort (articles-by-tag) #'>
-                            :key #'(lambda (x) (length (getf x :value))))
-                    do
-                      (setf output
-	                    (string
-	                     (concatenate
-                              'string output
-                              (format nil (getf *config* :gopher-format)
-                                      1 ;; gopher type, 1 for menus
-                                      ;; here we create a 72 width char string with title on the left
-				      ;; and number of articles on the right
-				      ;; we truncate the article title if it's too large
-				      (let ((title (format nil "~72a"
-						           (if (< 72 (length (getf tag :NAME)))
-							       (subseq (getf tag :NAME) 0 80)
-							       (getf tag :NAME))))
-                                            (article-number (format nil "~d article~p" (length (getf tag :value)) (length (getf tag :value)))))
-				        (replace title article-number :start1 (- (length title) (length article-number))))
-                                      (concatenate 'string
-                                                   (getf *config* :gopher-path) "/" (getf tag :NAME) "/")
-				      (getf *config* :gopher-server)
-				      (getf *config* :gopher-port)
-				      )))))
-                 output)))
-
-  ;; produce each tag gophermap index
-  (loop for tag in (articles-by-tag) do
-       (let* ((directory-path (concatenate 'string "output/gopher/" (getf tag :NAME) "/"))
-              (index-path (concatenate 'string directory-path (getf *config* :gopher-index)))
-              (articles-with-tag (loop for article in *articles*
-                                    when (member (article-id article) (getf tag :VALUE) :test #'equal)
-                                    collect article)))
-         (ensure-directories-exist directory-path)
-         (save-file index-path (generate-gopher-index articles-with-tag))))
-
-  ;; produce each article file (adding some headers)
-  (loop for article in *articles*
-     do
-       (with-converter
-	   (let ((id (article-id article)))
-	     (save-file (format nil "output/gopher/article-~d.txt" id)
-                        (format nil "Title: ~a~%Author: ~a~%Date: ~a~%Tags: ~a~%============~%~%~a"
-                                 (article-title article)
-                                 (article-author article)
-                                 (date-format (getf *config* :date-format) (article-date article))
-                                 (article-tag article)
-		                         (load-file (format nil "data/~d~d" id (converter-extension converter-object)))))))))
-
-
-;; This is function called when running the tool
+; This is function called when running the tool
 (defun generate-site()
-  (if (getf *config* :html)
-      (create-html-site))
-  (if (getf *config* :gopher)
-      (create-gopher-hole)))
+  (loop for i in *generators*
+        do (if (getf *config* (getf i :key))
+             (funcall (function (getf i :create-site-fn))))))
+
+;; all the generators
+(load "generators/html.lisp")
+(load "generators/gopher.lisp")
+
+
 
 ;;;; EXECUTION
 

@@ -1,4 +1,4 @@
-LISP=ecl
+LISP=sbcl #ecl
 
 all: html gopher
 
