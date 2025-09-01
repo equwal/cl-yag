@@ -3,22 +3,6 @@
 (setf *articles* (reverse *articles*)
       *generators* (reverse *generators*))
 
-(defun quit ()
- "quit portably (ripped from Sharp-CLOCC)"
-  #+abcl (ext:quit)
-  #+allegro (excl:exit)
-  #+clisp (ext:quit)
-  #+cmu (ext:quit)
-  #+cormanlisp (win32:exitprocess)
-  #+ecl (ext:quit)
-  #+gcl (lisp:bye)
-  #+lispworks (lw:quit)
-  #+lucid (lcl:quit)
-  #+sbcl (sb-ext:quit)
-  #-(or allegro clisp cmu cormanlisp gcl lispworks lucid sbcl)
-  (error 'not-implemented :proc (list 'quit))
-  )
-
 (defun replace-all (string part replacement &key (test #'char=))
   "Replace all occurrences of PART with REPLACEMENT in STRING."
   (with-output-to-string (out)
