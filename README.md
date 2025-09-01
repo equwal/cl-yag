@@ -3,10 +3,11 @@
 
 ## Introduction
 
-cl-yag is a lightweight, static site generator that produces
-**gopher** sites as well as **html** websites.  The name 'cl-yag'
-stands for 'Common Lisp - Yet Another website Generator'.  It runs
-without needing Quicklisp (Common LISP library manager).
+cl-yag is a lightweight, static site generator that produces **gopher**
+and **gemini** sites (and is easily extensible to more formats) as
+well as **html** websites.  The name 'cl-yag' stands for 'Common Lisp
+- Yet Another website Generator'.  It runs without needing Quicklisp
+(Common LISP library manager).
 
 
 ## Showcase
@@ -17,23 +18,49 @@ world-wide-web (visit: *[Solene's percent]
 (gopher://dataswamp.org/1/~solene/).
 
 
+    MASSIVE CHANGE CRAZINESS TOO MUCH (see desc)
+    
+    For your testing pleasure. I'm planning to send this up as multiple
+    atomic commits. There are probably some bugs.
+    
+    - Add an asdf system
+    - Plug and play/backward compatible (generator.lisp and
+      data/artcles.lisp don't need to be moved or anything)
+    This makes the generators/ directory where new generators can be added.
+    - Generators are now completely separate from the rest of the project
+      (see the generators directory). Adding new ones is as simple as addin
+      the file, registering a new generator in data/articles, and adding the
+      file to the asdf definition so it gets loaded.
+    - Bugfix: :if-does-not-exist :create it
+    - Makefile: changes: split it up in there so it is possible to build
+      smaller bits ad needed.
+    - Makefile: Added all the lisps in order of good-ness to search for.
+    - quit command/portability fix: used Clocc's quit commnd to make the
+      program portable.
+
 ## Requirements
 
 To use cl-yag you'll need:
 
-1. A Common Lisp Interpreter
-    - cl-yag's current default is [Steel Bank Common Lisp (SBCL)](http://www.sbcl.org/).
-    - [Embeddable Common Lisp (ECL)](https://common-lisp.net/project/ecl/) will do fine as well.
-2. A Markdown-to-HTML Converter
-    - cl-yag's current default is [multimarkdown](http://fletcherpenney.net/multimarkdown/).
+1. Any Common Lisp Interpreter and the ASDF package system
+    - cl-yag's current default is [Embeddable Common Lisp (ECL)](https://common-lisp.net/project/ecl/).
+    - [Steel Bank Common Lisp (SBCL)](http://www.sbcl.org/) will do fine as well.
 
+2. A Converter for arbitrary formats
+    - cl-yag's current default is [multimarkdown](http://fletcherpenney.net/multimarkdown/).
+    - pandoc could work fine too
+    - each post can have its own converter as needed (great if importing your site from elsewhere)
 
 ## Usage
 
-Go into your project's directory and type ``make``. You'll find your new website/gopher page in **output/**.  
-If you want to get rid of everything in your **output/** sub directories, type ``make clean``.  
-For further commands: read the Makefile.
-Read in the following section where to find it.
+Go into your project's directory and type ``make``. You'll find your
+new website/gopher/gemini page in **output/**.  If you want to get rid
+of everything in your **output/** sub directories, type ``make clean``.
+For further commands: read the Makefile. Read in the following section
+where to find it.
+
+It is necessary to edit the ``data/articles.lisp`` file which is the
+user configuration for the site.
 
 
 ## Overview: cl-yag's File Hierarchy
@@ -67,7 +94,13 @@ least the following files and folders:
 - **Makefile**
     - This file exists to simplify the recurring execution of frequently used commands.
 - **generator.lisp**
-    - This is cl-yag's core library.
+    - This is cl-yag's deploying script.
+- **generators-util,generator-aux-pre.lisp,generator-aux.lisp**
+    - This is the core library, split into multiple files so things are loaded in the right order.
+- **cl-yag.asd**
+    - This is the definition of the system. Useful for adding new generators and seeing the order files are loaded.
+- **generators/(...).lisp**
+    - The output generators. Contribute new ones!
 - **static/**
     - This directory holds content, that needs to be published without being changed (e.g. style sheets, js-scripts).
 	- If you come from 'non-static CMS'-Country: **static/** holds, what you would put in your **assets/** directory.
@@ -164,6 +197,11 @@ Of the following keywords, only ``:author`` and ``:short`` can be omitted.
 	- Hint: Use ``:tiny "Read the full article for more information."``, if you don't want to display the full text of an article on your index site.
 - **:title**
 	- The ``:title`` field's value sets your post's title, its first headline, as well as its entry on the index.html.
+
+### Generator registering
+
+Each generator is registered in the user config. To not generate something, just comment out the registry for that
+generator.
 
 
 ## How-to Create A New Post
@@ -269,6 +307,13 @@ webscale style sheets, you need to create them yourself.  However,
 cl-yag will work nicely with them and if you want to make your
 style sheets a part of cl-yag you're very welcome to contact me.
 
+### New Generators
+
+1. Add a lisp file to generators/ which does the necessary work. See the other ones for comparison.
+2. Add it to the **cl-yag.asd** file with the other generators (order is important).
+3. `register` it in **data/articles.lisp**
+4. Contribute it.
+
 
 # Hacking cl-yag
 
@@ -279,3 +324,4 @@ If you want to contribute, feel free to contact me and/or to send in a patch.
     - You could find a way to "sanitize" cl-yag's behaviour regarding the tilde (see: above);
     - Also see: 'Note' in 'Posting Without Tagging';
 	- Also see: 'A Note On Themes'.
+
