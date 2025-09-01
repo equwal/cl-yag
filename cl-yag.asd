@@ -8,10 +8,10 @@
   :serial t
   :components ((:file "packages")
                (:file "generators-util")
+               (:file "generator-aux-pre")
                (:file "generators/html")
                (:file "generators/gopher")
                (:file "generators/gemini")
-               (:file "generator-aux-pre")
                (:file "data/articles")
                (:file "generator-aux")
                ))

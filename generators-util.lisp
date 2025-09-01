@@ -18,3 +18,12 @@
 			     (getf *config* :default-converter))))
        (let ((converter-object (getf *converters* converter-name)))
 	 ,@code))))
+
+(defmacro prepare(template &body code)
+  "Simplify the declaration of a new page type by loading a template and executing code."
+  `(progn
+     (let ((output (load-file ,template)))
+       ,@code
+       output)))
+
+

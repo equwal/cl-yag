@@ -48,21 +48,6 @@
   (with-open-file (stream path :direction :output :if-exists :supersede :if-does-not-exist :create)
 		  (write-sequence data stream)))
 
-(defmacro prepare(template &body code)
-  "Simplify the declaration of a new page type by loading a template and executing code."
-  `(progn
-     (let ((output (load-file ,template)))
-       ,@code
-       output)))
-
-(defmacro with-converter(&body code)
-  "Get the converter object for an article and execute code in that context."
-  `(progn
-     (let ((converter-name (or (article-converter article)
-			     (getf *config* :default-converter))))
-       (let ((converter-object (getf *converters* converter-name)))
-	 ,@code))))
-
 (defun date-format(format date)
   "Format a date using the given format string with template substitutions."
   (let ((output format))

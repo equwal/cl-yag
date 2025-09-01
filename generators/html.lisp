@@ -85,12 +85,6 @@
 	   (template "%%Body%%" body)
 	   output))
 
-;; simplify the file saving by using the layout
-(defmacro generate(name &body data)
-  `(progn
-     (save-file ,name (generate-layout ,@data))))
-
-
 ;; generates the html of only one article
 ;; this is called in a loop to produce the homepage
 (defun create-article(article &optional &key (tiny t) (no-text nil))
