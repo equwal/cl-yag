@@ -1,4 +1,5 @@
 
+(in-package #:cl-yag)
 
 (defun generate-rss-html(article)
   (format nil "~d~d-~d.html"
@@ -7,6 +8,27 @@
                        (article-date article))
           (article-id article)))
 
+(defun use-converter-to-html(filename &optional (converter-name nil))
+  "Generate HTML file from source file using the converter associated with the post."
+  (let* ((converter-object (getf *converters*
+                                 (or converter-name
+			             (getf *config* :default-converter))))
+         (output           (converter-command converter-object))
+         (src-file (format nil "~a~a" filename (converter-extension converter-object)))
+         (dst-file (format nil "temp/data/~a.html" filename ))
+         (full-src-file (format nil "data/~a" src-file)))
+      ;; skip generating if the destination exists
+      ;; and is more recent than source
+      (unless (and
+               (probe-file dst-file)
+               (>=
+                (file-write-date dst-file)
+                (file-write-date full-src-file)))
+        (ensure-directories-exist "temp/data/")
+        (template "%IN" src-file)
+        (template "%OUT" dst-file)
+        (format t "~a~%" output)
+        (uiop:run-program output))))
 
 ;; We do all the website
 (defun create-html-site()
@@ -41,9 +63,6 @@
 
   ;;(generate-file-rss)
   (save-file "output/html/rss.xml" (generate-rss #'generate-rss-html)))
-
-(make-generator :key :html
-                :create-site-fn #'create-html-site)
 
 ;; html generation of index homepage
 (defun generate-semi-mainpage(&key (tiny t) (no-text nil))

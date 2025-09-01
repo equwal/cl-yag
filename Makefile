@@ -1,5 +1,6 @@
 # Find the first available Lisp implementation
-LISP := $(shell for lisp in ecl sbcl clisp abcl gcl cmu corman lucid lispworks allegro; do \
+LISPS?=sbcl ecl clisp abcl gcl cmu corman lucid lispworks allegro
+LISP := $(shell for lisp in $(LISPS); do \
 	if command -v $$lisp >/dev/null 2>&1; then \
 		echo $$lisp; \
 		break; \
@@ -22,7 +23,9 @@ css:
 gopher:
 	mkdir -p "output/gopher"
 
-clean: cleanhtml cleangopher cleangemini
+clean: temp cleanhtml cleangopher cleangemini
+
+temp:
 	rm -fr "temp"
 
 cleanhtml:

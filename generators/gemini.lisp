@@ -1,3 +1,6 @@
+
+(in-package #:cl-yag)
+
 (defun generate-rss-gemini(article)
   (format nil "gemini://~a/articles/~a.gmi"
           (getf *config* :gemini-path)
@@ -71,6 +74,3 @@
                                  "Date  : " (date-format (getf *config* :date-format) (article-date article)) #\Newline
                                  "Tags  : " (article-tag article) #\Newline #\Newline
 		                 (load-file (format nil "data/~d~d" id (converter-extension converter-object))))))))))
-
-(make-generator :key :gemini
-                :create-site-fn #'create-gemini-capsule)

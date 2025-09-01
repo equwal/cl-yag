@@ -1,3 +1,6 @@
+
+(in-package #:cl-yag)
+
 (defun generate-rss-gopher(article)
   (format nil "gopher://~a:~d/0~a/article-~a.txt"
           (getf *config* :gopher-server)
@@ -94,6 +97,3 @@
                                  (date-format (getf *config* :date-format) (article-date article))
                                  (article-tag article)
 		                         (load-file (format nil "data/~d~d" id (converter-extension converter-object)))))))))
-
-(make-generator :key :gopher
-                :create-site-fn #'create-gopher-hole)
