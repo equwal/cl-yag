@@ -30,7 +30,7 @@
 (defun load-file(path)
   "Load a file as a string. We escape ~ to avoid failures with format."
   (if (probe-file path)
-      (handler-case (with-open-file (stream path :if-exists :supersede :if-does-not-exist :create)
+      (handler-case (with-open-file (stream path :direction :input)
                       (let ((contents (make-string (file-length stream))))
                         (read-sequence contents stream)
                         contents))
@@ -40,6 +40,7 @@
 
 (defun save-file(path data)
   "Save a string to a file."
+  (ensure-directories-exist path)
   (with-open-file (stream path :direction :output :if-exists :supersede :if-does-not-exist :create)
 		  (write-sequence data stream)))
 
