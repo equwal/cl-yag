@@ -32,21 +32,6 @@
                    (if left-separator-position (+ 1 left-separator-position) 0)
                    (- count 1))))))
 
-(defun load-file(path)
-  "Load a file as a string. We escape ~ to avoid failures with format."
-  (if (probe-file path)
-      (handler-case (with-open-file (stream path :if-exists :supersede :if-does-not-exist :create)
-                      (let ((contents (make-string (file-length stream))))
-                        (read-sequence contents stream)
-                        contents))
-        (file-error (condition)
-          (cerror "ERROR : file ~a not found. Aborting~%" condition)))
-    ))
-
-(defun save-file(path data)
-  "Save a string to a file."
-  (with-open-file (stream path :direction :output :if-exists :supersede :if-does-not-exist :create)
-		  (write-sequence data stream)))
 
 (defun date-format(format date)
   "Format a date using the given format string with template substitutions."
