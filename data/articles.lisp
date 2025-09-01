@@ -1,6 +1,9 @@
 ;; MIND: The tilde character "~" must be escaped like this '~~' to use it as a literal.
 
-(defvar *config*
+(in-package #:cl-yag)
+
+
+(setf *config*
   (list
    :webmaster       "Your autor name here"
    :title           "Your website's title."
@@ -22,6 +25,13 @@
    ;; :gopher-format "~d~a	~a	~a	~a~%"   ;; menu format (gophernicus and others)
    ;; :gopher-index "gophermap"                         ;; menu file (gophernicus and others)
    ))
+
+(register-generator :key :html
+                    :create-site-fn #'create-html-site)
+(register-generator :key :gopher
+                    :create-site-fn #'create-gopher-hole)
+(register-generator :key :gemini
+                    :create-site-fn #'create-gemini-capsule)
 
 ;; Define Your Webpage
 
