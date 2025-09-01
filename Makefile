@@ -1,5 +1,5 @@
 # Find the first available Lisp implementation
-LISPS?=sbcl ecl clisp abcl gcl cmu corman lucid lispworks allegro
+LISPS?=ecl sbcl clisp abcl gcl cmu corman lucid lispworks allegro
 LISP := $(shell for lisp in $(LISPS); do \
 	if command -v $$lisp >/dev/null 2>&1; then \
 		echo $$lisp; \
