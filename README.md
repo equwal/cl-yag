@@ -31,9 +31,9 @@ To use cl-yag you'll need:
 ## Usage
 
 Go into your project's directory and type ``make``. You'll find your new website/gopher page in **output/**.  
-If you want to get rid of everything in your **output/** subdirectories, type ``make clean``.  
-For further commands: read the Makefile.  
-Read in the follwing section where to find it.
+If you want to get rid of everything in your **output/** sub directories, type ``make clean``.  
+For further commands: read the Makefile.
+Read in the following section where to find it.
 
 
 ## Overview: cl-yag's File Hierarchy
@@ -65,17 +65,17 @@ least the following files and folders:
 		`-- rss.tpl
 
 - **Makefile**
-    - This file exists to simplifiy the recurring execution of frequently used commands.
+    - This file exists to simplify the recurring execution of frequently used commands.
 - **generator.lisp**
     - This is cl-yag's core library.
 - **static/**
-    - This directory holds content, that needs to be published without being changed (e.g. stylesheets, js-scripts).
+    - This directory holds content, that needs to be published without being changed (e.g. style sheets, js-scripts).
 	- If you come from 'non-static CMS'-Country: **static/** holds, what you would put in your **assets/** directory.
 - **templates/**
-    - The templates in this directory provide the structural skeleton(s) of the webpages and feeds you want to create.
+    - The templates in this directory provide the structural skeleton(s) of the web pages and feeds you want to create.
 - **output/**
     - cl-yag puts in this directory everything ready to get deployed.
-	- Because cl-yag generates not only HTML, but gopher-compliant pages as well, **output/** **holds two subdirectories**.
+	- Because cl-yag generates not only HTML, but gopher-compliant pages as well, **output/** **holds two sub directories**.
 		- **gopher/** contains the website for gopher,
 		- **html/** contains the website in HTML.
 
@@ -87,7 +87,7 @@ This directory is crucial for the usage of cl-yag.
 
 **data/** contains
 
-- the **articles.lisp** configuration file, which defines important metadata for posts and pages.
+- the **articles.lisp** configuration file, which defines important meta-data for posts and pages.
 - It also holds **${id}.md** files, which are holding your posts' (or pages') content. You can use markdown to write them.
 
 For more information: Read section 'Configuration'.
@@ -101,8 +101,8 @@ to set most of the values in this file.
 
 **data/articles.lisp** has two parts:
 
-1. A variable called *config*. Its values define your webpage.
-2. "posts" declaration with their metadata
+1. A variable called *config*. Its values define your web page.
+2. "posts" declaration with their meta-data
 
 Values are assigned by placing a string (e.g. ``"foo"``) or a boolean
 (i.e. ``t`` or ``nil``) behind a keyword (e.g. ``:title``).
@@ -116,7 +116,7 @@ The *config* variable is used to assign the following values:
     - The name of the default(!) author. 
 	- ``:webmaster`` gets used, if ``:author`` is omitted. (See below: 'The **articles** variable'.)
 - **:title**
-    - The title of the webpage
+    - The title of the web-page
 - **:description**
     - This text is used in the *description* field of the atom/rss feed.
 - **:url**
@@ -138,12 +138,12 @@ The *config* variable is used to assign the following values:
 - **gopher-format**
     - format of the gopher server. default is the geomyidae format, gophernicus format is commented.
 - **gopher-index**
-    - name of the gopher menu file. defaut is index.gph for geomyidae, gophermap file is commented.
+    - name of the gopher menu file. default is index.gph for geomyidae, gophermap file is commented.
 
 
 ### Posts declarations
 
-Each post is declared with its metadata using the function "post".
+Each post is declared with its meta-data using the function "post".
 So you need to add a new line for each of your posts.
 
 Of the following keywords, only ``:author`` and ``:short`` can be omitted.
@@ -152,12 +152,12 @@ Of the following keywords, only ``:author`` and ``:short`` can be omitted.
     - The ``:author`` field is used to display the article's author.
     - If you omit it, the generator will take the name from the ``:webmaster`` field of the *config* variable.
 - **:id**
-    - The ``:id`` field holds the filename of your post/page.
+    - The ``:id`` field holds the file name of your post/page.
 	- Example: ``:id "2"`` will load file **data/2.md**. Use text instead of numbers, if you want to.
 	- (See section: 'The **data/** Directory'.)
 - **:tag**
     - ``:tag`` field is used to create a "view" containing all articles of the same tag.
-	-  MIND: Whitespaces are used to separate tags and are not allowed in(!) tags.
+	-  MIND: White spaces are used to separate tags and are not allowed in(!) tags.
 - **:tiny**
 	- The ``:tiny`` field's value is used for displaying a really short description of the posts content on your homepage.
 	- If ``:tiny`` doesn't get a value, the full article gets displayed.
@@ -166,7 +166,7 @@ Of the following keywords, only ``:author`` and ``:short`` can be omitted.
 	- The ``:title`` field's value sets your post's title, its first headline, as well as its entry on the index.html.
 
 
-## Howto Create A New Post
+## How-to Create A New Post
  
 Edit **data/articles.lisp** and add a new list to the *articles* variable:
 
@@ -180,7 +180,7 @@ Edit **data/articles.lisp** and add a new list to the *articles* variable:
 Then write a corresponding **data/2.md** file, using markdown.
 
 
-## Howto Publish A Post
+## How-to Publish A Post
 
 I prepared a Makefile to facilitate the process of generating and
 publishing your static sites.
@@ -192,7 +192,7 @@ The default is the **output/** directory, but you can use a symbolic link
 pointing to some other directory as well.
 
 
-## Howto Add A New Page
+## How-to Add A New Page
 
 You may want to have some dedicated pages besides the index or a post.
 To create one, edit the *generate-site* function in cl-yag's
@@ -205,7 +205,7 @@ This will produce **output/html/somepage.html**.
 
 ## Further Customization
 
-### Howto Use Another Common Lisp Interpreter
+### How-to Use Another Common Lisp Interpreter
 
 cl-yags default Lisp interpreter is **sbcl**. If you want to use a
 different interpreter you need to set the variable *LISP* to the name
@@ -260,7 +260,7 @@ displays: "Tags: ".
 
 ### A Note On Themes
 
-Although cl-yag may ship with a minimalistic template, cl-yag focuses
+Although cl-yag may ship with a minimalist template, cl-yag focuses
 on generating html- and gopher-compliant structural markup - not
 themed layouts.
 

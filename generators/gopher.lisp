@@ -5,6 +5,30 @@
           (getf *config* :gopher-path)
           (article-id article)))
 
+;; generate a gopher index file
+(defun generate-gopher-index(articles)
+  (let ((output (load-file "templates/gopher_head.tpl")))
+    (dolist (article articles)
+      (setf output
+	    (string
+	     (concatenate 'string output
+                          (format nil (getf *config* :gopher-format)
+                                  0 ;;;; gopher type, 0 for text files
+				  ;; here we create a 80 width char string with title on the left
+				  ;; and date on the right
+				  ;; we truncate the article title if it's too large
+				  (let ((title (format nil "~80a"
+						       (if (< 80 (length (article-title article)))
+							   (subseq (article-title article) 0 80)
+							   (article-title article)))))
+				    (replace title (article-rawdate article) :start1 (- (length title) (length (article-rawdate article)))))
+				  (concatenate 'string
+                                               (getf *config* :gopher-path) "/article-" (article-id article) ".txt")
+				  (getf *config* :gopher-server)
+				  (getf *config* :gopher-port)
+				  )))))
+    output))
+
 ;; we do all the gopher hole
 (defun create-gopher-hole()
 
@@ -48,9 +72,6 @@
 				      )))))
                  output)))
 
-(make-generator :key :gopher
-                :create-site-fn #'create-gopher-hole)
-
   ;; produce each tag gophermap index
   (loop for tag in (articles-by-tag) do
        (let* ((directory-path (concatenate 'string "output/gopher/" (getf tag :NAME) "/"))
@@ -74,29 +95,5 @@
                                  (article-tag article)
 		                         (load-file (format nil "data/~d~d" id (converter-extension converter-object)))))))))
 
-;; generate a gopher index file
-(defun generate-gopher-index(articles)
-  (let ((output (load-file "templates/gopher_head.tpl")))
-    (dolist (article articles)
-      (setf output
-	    (string
-	     (concatenate 'string output
-                          (format nil (getf *config* :gopher-format)
-                                  0 ;;;; gopher type, 0 for text files
-				  ;; here we create a 80 width char string with title on the left
-				  ;; and date on the right
-				  ;; we truncate the article title if it's too large
-				  (let ((title (format nil "~80a"
-						       (if (< 80 (length (article-title article)))
-							   (subseq (article-title article) 0 80)
-							   (article-title article)))))
-				    (replace title (article-rawdate article) :start1 (- (length title) (length (article-rawdate article)))))
-				  (concatenate 'string
-                                               (getf *config* :gopher-path) "/article-" (article-id article) ".txt")
-				  (getf *config* :gopher-server)
-				  (getf *config* :gopher-port)
-				  )))))
-    output))
-
-
-
+(make-generator :key :gopher
+                :create-site-fn #'create-gopher-hole)

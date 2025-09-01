@@ -11,6 +11,9 @@
    :default-converter :markdown2
    :html   t                                            ;; 't' to enable export to a html website / 'nil' to disable
    :gopher t                                            ;; 't' to enable export to a gopher website / 'nil' to disable
+   :gemini t                                            ;; 't' to enable export to a gemini capsule / 'nil' to disable
+   :gemini-path      "gemini://perso.pw/blog/"          ;; absolute path of your gemini capsule
+   :gemini-index     "index.md"                         ;; filename of index file
    :gopher-path      "/user"                            ;; absolute path of your gopher directory
    :gopher-server    "my.website"                       ;; hostname of the gopher server
    :gopher-port      "70"                               ;; tcp port of the gopher server, 70 usually

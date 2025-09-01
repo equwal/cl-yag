@@ -51,13 +51,15 @@ least the following files and folders:
 	|   `-- articles.lisp
 	|-- generator.lisp
 	|-- output/
-	|   |-- gopher/
+	|   |-- gemini/
+   	|   |-- gopher/
 	|   `-- html/
 	|-- static/
 	|   |-- css/style.css
 	|   `-- img/
 	`-- templates/
 		|-- article.tpl
+		|-- gemini_head.tpl
 		|-- gopher_head.tpl
 		|-- layout.tpl
 		|-- one-tag.tpl
@@ -129,6 +131,12 @@ The *config* variable is used to assign the following values:
     - ``t`` to export html website. Set ``nil`` to disable.
 - **gopher**
     - ``t`` to export gopher website. Set ``nil`` to disable.
+- **gemini**
+    - ``t`` to export gemini capsule. Set ``nil`` to disable.
+- **gemini-path**
+    - This is the absolute public gemini url.
+- **gemini-index**
+    - This is the name of the index file. Default is ``index.md``
 - **gopher-path**
     - This is the full path of the directory to access your gopher hole.
 - **gopher-server**
@@ -187,9 +195,9 @@ publishing your static sites.
 All you need to do in order to publish is to go into your cl-yag
 directory and type ``make``.
 
-The make command creates html and gopher files in the defined location.
-The default is the **output/** directory, but you can use a symbolic link
-pointing to some other directory as well.
+The make command creates html, gemini and gopher files in the defined
+location.  The default is the **output/** directory, but you can use a
+symbolic link pointing to some other directory as well.
 
 
 ## Howto Add A New Page
@@ -261,8 +269,8 @@ displays: "Tags: ".
 ### A Note On Themes
 
 Although cl-yag may ship with a minimalistic template, cl-yag focuses
-on generating html- and gopher-compliant structural markup - not
-themed layouts.
+on generating html-, gemini and gopher-compliant structural markup -
+not themed layouts.
 
 If you want some deeply refined, cross-browser compatible, responsive,
 webscale style sheets, you need to create them yourself.  However,
@@ -272,7 +280,7 @@ style sheets a part of cl-yag you're very welcome to contact me.
 
 # Hacking cl-yag
 
-I tried to make cl-yag easy to extend.  
+I tried to make cl-yag easy to extend.
 If you want to contribute, feel free to contact me and/or to send in a patch.
 
 - If you are looking for a way to contribute:

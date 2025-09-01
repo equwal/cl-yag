@@ -1,5 +1,22 @@
 ;;;; GLOBAL VARIABLES
 
+(defun quit ()
+ "quit portably (ripped from Sharp-CLOCC)"
+  #+abcl (ext:quit)
+  #+allegro (excl:exit)
+  #+clisp (ext:quit)
+  #+cmu (ext:quit)
+  #+cormanlisp (win32:exitprocess)
+  #+ecl (ext:quit)
+  #+gcl (lisp:bye)
+  #+lispworks (lw:quit)
+  #+lucid (lcl:quit)
+  #+sbcl (sb-ext:quit)
+  #-(or allegro clisp cmu cormanlisp gcl lispworks lucid sbcl)
+  (error 'not-implemented :proc (list 'quit))
+  )
+
+
 (defparameter *articles* '())
 (defparameter *converters* '())
 (defparameter *days* '("Monday" "Tuesday" "Wednesday" "Thursday"
@@ -22,16 +39,16 @@
 
 (load "config.lisp")
 
-;; return the day of the week
 (defun get-day-of-week(day month year)
+  "Return the day of the week."
   (multiple-value-bind
    (second minute hour date month year day-of-week dst-p tz)
    (decode-universal-time (encode-universal-time 0 0 0 day month year))
    (declare (ignore second minute hour date month year dst-p tz))
    day-of-week))
 
-;; parse the date to
 (defun date-parse(date)
+  "Parse a date into components."
   (if (= 8 (length date))
       (let* ((year     (parse-integer date :start 0 :end 4))
              (monthnum (parse-integer date :start 4 :end 6))
@@ -57,8 +74,8 @@
                       :converter converter)
         *articles*))
 
-;; we add a converter to the list of the one availables
 (defun converter(&optional &key name command extension)
+  "Add a converter to the list of those available."
   (setf *converters*
         (append
          (list name
@@ -67,12 +84,18 @@
                                :extension extension))
          *converters*)))
 
-;; load data from metadata and load config
+;; we add a generator to the list of available ones
+(defun make-generator(&optional &key key create-site-fn)
+  (push (make-generator :key key
+                       :create-site-fn create-site-fn)
+        *generators*))
+
+;; Load data from metadata and config
 (load "data/articles.lisp")
 (setf *articles* (reverse *articles*))
 
-;; common-lisp don't have a replace string function natively
 (defun replace-all (string part replacement &key (test #'char=))
+  "Replace all occurrences of PART with REPLACEMENT in STRING."
   (with-output-to-string (out)
     (loop with part-length = (length part)
        for old-pos = 0 then (+ pos part-length)
@@ -85,9 +108,8 @@
        when pos do (write-string replacement out)
        while pos)))
 
-;; common-lisp don't have a split string function natively
 (defun split-str(text &optional (separator #\Space))
-  "this function split a string with separator and return a list"
+  "This function splits a string with separator and returns a list."
   (let ((text (concatenate 'string text (string separator))))
     (loop for char across text
        counting char into count
@@ -101,9 +123,8 @@
                    (if left-separator-position (+ 1 left-separator-position) 0)
                    (- count 1))))))
 
-;; load a file as a string
-;; we escape ~ to avoid failures with format
 (defun load-file(path)
+  "Load a file as a string. We escape ~ to avoid failures with format."
   (if (probe-file path)
       (with-open-file (stream path)
         (let ((contents (make-string (file-length stream))))
@@ -113,36 +134,34 @@
       (format t "ERROR : file ~a not found. Aborting~%" path)
       (quit))))
 
-;; save a string in a file
 (defun save-file(path data)
+  "Save a string to a file."
   (with-open-file (stream path :direction :output :if-exists :supersede)
 		  (write-sequence data stream)))
 
-;; simplify the str replace work
 (defmacro template(before &body after)
+  "Simplify string replacement work in templates."
   `(progn
      (setf output (replace-all output ,before ,@after))))
 
-;; simplify the declaration of a new page type
 (defmacro prepare(template &body code)
+  "Simplify the declaration of a new page type by loading a template and executing code."
   `(progn
      (let ((output (load-file ,template)))
        ,@code
        output)))
 
 
-;; get the converter object of "article"
 (defmacro with-converter(&body code)
+  "Get the converter object for an article and execute code in that context."
   `(progn
-     (let ((converter-name (if (article-converter article)
-			       (article-converter article)
+     (let ((converter-name (or (article-converter article)
 			     (getf *config* :default-converter))))
        (let ((converter-object (getf *converters* converter-name)))
 	 ,@code))))
 
-;; generate the html file from the source file
-;; using the converter associated with the post
 (defun use-converter-to-html(filename &optional (converter-name nil))
+  "Generate HTML file from source file using the converter associated with the post."
   (let* ((converter-object (getf *converters*
                                  (or converter-name
 			             (getf *config* :default-converter))))
@@ -163,8 +182,8 @@
         (format t "~a~%" output)
         (uiop:run-program output))))
 
-;; format the date
 (defun date-format(format date)
+  "Format a date using the given format string with template substitutions."
   (let ((output format))
     (template "%DayName"     (getf date :dayname))
     (template "%DayNumber"   (format nil "~2,'0d" (getf date :daynumber)))
@@ -173,8 +192,80 @@
     (template "%Year"        (write-to-string (getf date :year )))
     output))
 
-;; xml generation of the items for the rss
+(defmacro generate(name &body data)
+  "Simplify file saving by using the layout system."
+  `(progn
+     (save-file ,name (generate-layout ,@data))))
+
+(defun articles-by-tag()
+  "Generate a list of tags with associated article IDs."
+  (let ((tag-list))
+    (loop for article in *articles* do
+	  (when (article-tag article) ;; we don't want an error if no tag
+	    (loop for tag in (split-str (article-tag article)) do ;; for each word in tag keyword
+		  (setf (getf tag-list (intern tag "KEYWORD")) ;; we create the keyword is inexistent and add ID to :value
+			(list
+			 :name tag
+			 :value (push (article-id article) (getf (getf tag-list (intern tag "KEYWORD")) :value)))))))
+    (loop for i from 1 to (length tag-list) by 2 collect ;; removing the keywords
+	  (nth i tag-list))))
+
+(defun get-tag-list-article(&optional article)
+  "Generate HTML for the list of tags for a specific article."
+  (apply #'concatenate 'string
+         (mapcar #'(lambda (item)
+                     (prepare "templates/one-tag.tpl" (template "%%Name%%" item)))
+                 (split-str (article-tag article)))))
+
+(defun get-tag-list()
+  "Generate HTML for the complete list of all tags."
+  (apply #'concatenate 'string
+         (mapcar #'(lambda (item)
+                     (prepare "templates/one-tag.tpl"
+                              (template "%%Name%%" (getf item :name))))
+                 (articles-by-tag))))
+
+(defun create-article(article &optional &key (tiny t) (no-text nil))
+  "Generate HTML for a single article. Called in a loop to produce the homepage."
+  (prepare "templates/article.tpl"
+	   (template "%%Author%%" (let ((author (article-author article)))
+                                    (or author (getf *config* :webmaster))))
+	   (template "%%Date%%"   (date-format (getf *config* :date-format)
+					       (article-date article)))
+           (template "%%Raw-Date%%" (article-rawdate article))
+           (template "%%Title%%"  (article-title article))
+           (template "%%Id%%"     (article-id article))
+	   (template "%%Tags%%"   (get-tag-list-article article))
+	   (template "%%Date-Url%%"  (date-format "%Year-%MonthNumber-%DayNumber"
+						  (article-date article)))
+	   (template "%%Text%%"   (if no-text
+				      ""
+                                      (if (and tiny (article-tiny article))
+                                          (format nil "<p>~a</p>" (article-tiny article))
+                                          (load-file (format nil "temp/data/~d.html" (article-id article))))))))
+
+(defun generate-layout(body &optional &key (title nil))
+  "Return HTML string for a complete page with title and layout, using the parameter as content."
+  (prepare "templates/layout.tpl"
+	   (template "%%Title%%" (or title (getf *config* :title)))
+	   (template "%%Tags%%" (get-tag-list))
+	   (template "%%Body%%" body)
+	   output))
+
+(defun generate-semi-mainpage(&key (tiny t) (no-text nil))
+  "Generate HTML for the index homepage."
+  (apply #'concatenate 'string
+         (loop for article in *articles* collect
+              (create-article article :tiny tiny :no-text no-text))))
+
+(defun generate-tag-mainpage(articles-in-tag)
+  "Generate HTML for a tag-specific homepage."
+  (apply #'concatenate 'string
+         (loop for article in *articles*
+            when (member (article-id article) articles-in-tag :test #'equal)
+            collect (create-article article :tiny t))))
 (defun generate-rss-item (fn)
+  "Generate XML for RSS feed items."
   (apply #'concatenate 'string
          (loop for article in *articles*
             for i from 1 to (min (length *articles*) (getf *config* :rss-item-number))
@@ -190,16 +281,16 @@
                        (template "%%Url%%" (funcall fn article))))))
 
 
-;; Generate the rss xml data
 (defun generate-rss(fn)
+  "Generate complete RSS XML data."
   (prepare "templates/rss.tpl"
 	   (template "%%Description%%" (getf *config* :description))
 	   (template "%%Title%%" (getf *config* :title))
 	   (template "%%Url%%" (getf *config* :url))
 	   (template "%%Items%%" (generate-rss-item fn))))
 
-; This is function called when running the tool
 (defun generate-site()
+  "Main function called when running the site generation tool."
   (loop for i in *generators*
         do (if (getf *config* (getf i :key))
              (funcall (function (getf i :create-site-fn))))))
@@ -207,8 +298,7 @@
 ;; all the generators
 (load "generators/html.lisp")
 (load "generators/gopher.lisp")
-
-
+(load "generators/gemini.lisp")
 
 ;;;; EXECUTION
 
